@@ -21,6 +21,7 @@
     "test:e2e": "playwright test",
     "record-fixture": "tsx scripts/record-fixture.ts",
     "knip": "knip",
+    "relink": "npm install ../ui --install-links",
     "prepare": "husky"
   },
   "dependencies": {

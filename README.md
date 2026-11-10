@@ -98,7 +98,7 @@ This calls GitHub and the Anthropic API and spends tokens.
 
 Node 24 and npm 11.
 
-Clone [`eylulg/ui`](https://github.com/eylulg/ui) next to this folder and build it once (`npm install && npm run build` inside it). The app depends on it as `file:../ui`.
+Clone [`eylulg/ui`](https://github.com/eylulg/ui) next to this folder and build it once (`npm install && npm run build` inside it). The app depends on it as `file:../ui`, installed as a copy with `npm install ../ui --install-links`; run `npm run relink` after rebuilding the library.
 
 ```bash
 npm install

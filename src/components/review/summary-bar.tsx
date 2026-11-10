@@ -24,11 +24,11 @@ export function SummaryBar({ findings, model, usage, demo, onExport, onNewReview
     const cost = model ? estimateCostUsd(model, usage.inputTokens, usage.outputTokens) : 0;
 
     return (
-        <section aria-label="Review summary" className="flex flex-col gap-4 border-b border-subtle pb-4">
+        <section aria-label="Review summary" className="sticky top-16 z-30 flex flex-col gap-3 border-b border-subtle bg-primary py-3">
             <ul aria-label="Open findings by severity" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {SEVERITIES.map((severity) => (
                     <li key={severity}>
-                        <Stat label={SEVERITY_LABEL[severity]} value={counts[severity]} />
+                        <Stat size="sm" label={SEVERITY_LABEL[severity]} value={counts[severity]} />
                     </li>
                 ))}
             </ul>

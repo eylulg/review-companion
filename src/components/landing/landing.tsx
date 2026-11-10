@@ -47,8 +47,6 @@ export function Landing({ demo, defaultModel, onStart }: LandingProps) {
     const [includeSkipped, setIncludeSkipped] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const modelDescription = MODEL_OPTIONS.find((option) => option.id === model)?.description;
-
     function submit(value: string) {
         if (!parsePullRequestUrl(value)) {
             setError(INVALID_URL_MESSAGE);
@@ -105,8 +103,12 @@ export function Landing({ demo, defaultModel, onStart }: LandingProps) {
                         errorMessage={error ?? undefined}
                     />
 
-                    <Select label="Model" selectedKey={model} onSelectionChange={handleModelChange} items={MODEL_OPTIONS} hint={modelDescription}>
-                        {(option) => <SelectItem id={option.id}>{option.label}</SelectItem>}
+                    <Select label="Model" selectedKey={model} onSelectionChange={handleModelChange} items={MODEL_OPTIONS}>
+                        {(option) => (
+                            <SelectItem id={option.id} description={option.description}>
+                                {option.label}
+                            </SelectItem>
+                        )}
                     </Select>
 
                     <Switch

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AppShell, SiteFooter, themeInitScript } from "@eylulg/ui/chrome";
+import "@eylulg/ui/fonts.css";
 import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
 import { Nav } from "./nav";

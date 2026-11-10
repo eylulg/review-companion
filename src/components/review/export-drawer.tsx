@@ -79,13 +79,7 @@ export default function ExportDrawer({ onClose, findings, files, pr, linkLines }
                 >
                     Include findings you have not triaged
                 </Switch>
-                <Textarea
-                    label={`Markdown for ${count} ${count === 1 ? "comment" : "comments"}`}
-                    value={markdown}
-                    isReadOnly
-                    rows={18}
-                    textareaClassName="font-data"
-                />
+                <Textarea label={`Markdown for ${count} ${count === 1 ? "comment" : "comments"}`} value={markdown} isReadOnly rows={18} font="data" />
             </div>
         </Drawer>
     );

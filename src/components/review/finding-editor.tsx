@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, type KeyboardEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Button } from "@eylulg/ui/button";
 import { Input } from "@eylulg/ui/input";
 import { Select, SelectItem } from "@eylulg/ui/select";
@@ -31,7 +31,7 @@ export function FindingEditor({ finding, titleId, onSave, onCancel }: FindingEdi
         onSave({ title: title.trim(), severity, explanation: explanation.trim(), suggestion });
     }
 
-    function handleKeyDown(event: KeyboardEvent<HTMLFormElement>) {
+    function handleKeyDown(event: { key: string; preventDefault: () => void }) {
         if (event.key !== "Escape") return;
         event.preventDefault();
         onCancel();
@@ -43,19 +43,34 @@ export function FindingEditor({ finding, titleId, onSave, onCancel }: FindingEdi
     }
 
     return (
-        // Escape in any field cancels the edit, so the listener sits on the form that wraps them.
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-        <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} aria-label={`Edit finding: ${finding.title}`} className="flex flex-col gap-4">
-            <Input id={titleId} label="Title" value={title} onChange={setTitle} isRequired isInvalid={title.trim() === ""} />
-            <Select label="Severity" className="sm:w-48" selectedKey={severity} onSelectionChange={handleSeverityChange} items={SEVERITY_ITEMS}>
+        <form onSubmit={handleSubmit} aria-label={`Edit finding: ${finding.title}`} className="flex flex-col gap-4">
+            <Input id={titleId} label="Title" value={title} onChange={setTitle} onKeyDown={handleKeyDown} isRequired isInvalid={title.trim() === ""} />
+            <Select
+                label="Severity"
+                className="sm:w-48"
+                selectedKey={severity}
+                onSelectionChange={handleSeverityChange}
+                onKeyDown={handleKeyDown}
+                items={SEVERITY_ITEMS}
+            >
                 {(item) => <SelectItem id={item.id}>{item.label}</SelectItem>}
             </Select>
-            <Textarea label="Explanation" value={explanation} onChange={setExplanation} rows={5} isRequired isInvalid={explanation.trim() === ""} />
+            <Textarea
+                label="Explanation"
+                value={explanation}
+                onChange={setExplanation}
+                onKeyDown={handleKeyDown}
+                rows={5}
+                isRequired
+                isInvalid={explanation.trim() === ""}
+            />
             <Textarea
                 label="Suggested replacement"
                 hint="Replaces the cited lines. Leave empty for no suggestion block."
                 value={suggestion}
                 onChange={setSuggestion}
+                onKeyDown={handleKeyDown}
+                font="data"
                 rows={4}
             />
             <div className="flex flex-wrap gap-2">

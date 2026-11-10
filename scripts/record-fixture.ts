@@ -2,7 +2,10 @@
  * Records a real review into src/fixtures/demo-review.json so demo mode replays it.
  * This calls GitHub and the Anthropic API and spends tokens.
  *
- *   ANTHROPIC_API_KEY=... npm run record-fixture -- https://github.com/owner/repo/pull/123
+ *   ANTHROPIC_API_KEY=... REVIEW_MODEL=claude-opus-5-5 npm run record-fixture -- https://github.com/owner/repo/pull/123
+ *
+ * REVIEW_MODEL picks the model that is recorded (the app default is Sonnet 5.5). The README explains what to
+ * update by hand afterwards.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { writeFileSync } from "node:fs";

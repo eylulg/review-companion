@@ -1,12 +1,17 @@
+import { Badge } from "@eylulg/ui/badge";
 import { SKIP_REASON_LABEL, basename } from "@/lib/file-filters";
 import { fileAnchor } from "@/lib/ordering";
 import type { FileSummary, TriagedFinding } from "@/lib/types";
-import { cx } from "@/utils/cx";
 
 interface FileListProps {
     files: FileSummary[];
     findings: TriagedFinding[];
 }
+
+const FILE_LINK_CLASS =
+    "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm text-secondary hover:bg-hover focus-visible:outline-2 focus-visible:outline-focus";
+
+const GROUP_HEADING_CLASS = "px-2 text-xs font-semibold tracking-wide text-tertiary uppercase";
 
 export function FileList({ files, findings }: FileListProps) {
     const counts = new Map<string, number>();
@@ -19,7 +24,7 @@ export function FileList({ files, findings }: FileListProps) {
     return (
         <nav aria-label="Files in this pull request" className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-                <h2 className="px-2 text-xs font-semibold tracking-wide text-tertiary uppercase">Reviewed files</h2>
+                <h2 className={GROUP_HEADING_CLASS}>Reviewed files</h2>
                 <ul className="flex flex-col">
                     {reviewed.map((file) => {
                         const count = counts.get(file.path) ?? 0;
@@ -29,17 +34,12 @@ export function FileList({ files, findings }: FileListProps) {
                                     href={`#${fileAnchor(file.path)}`}
                                     title={file.path}
                                     aria-label={`${basename(file.path)} ${count} ${count === 1 ? "finding" : "findings"}, ${file.path}`}
-                                    className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm text-secondary hover:bg-primary_hover focus-visible:outline-2 focus-visible:outline-brand"
+                                    className={FILE_LINK_CLASS}
                                 >
                                     <span className="min-w-0 truncate">{basename(file.path)}</span>{" "}
-                                    <span
-                                        className={cx(
-                                            "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                                            count > 0 ? "bg-brand-primary text-brand-secondary" : "bg-secondary text-tertiary",
-                                        )}
-                                    >
+                                    <Badge size="sm" color={count > 0 ? "brand" : "gray"}>
                                         {count}
-                                    </span>
+                                    </Badge>
                                 </a>
                             </li>
                         );
@@ -48,7 +48,7 @@ export function FileList({ files, findings }: FileListProps) {
             </div>
             {skipped.length > 0 && (
                 <div className="flex flex-col gap-1">
-                    <h2 className="px-2 text-xs font-semibold tracking-wide text-tertiary uppercase">Skipped</h2>
+                    <h2 className={GROUP_HEADING_CLASS}>Skipped</h2>
                     <ul className="flex flex-col">
                         {skipped.map((file) => (
                             <li key={file.path} title={file.path} className="flex items-center justify-between gap-2 px-2 py-1 text-sm text-tertiary">

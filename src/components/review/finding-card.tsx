@@ -1,13 +1,14 @@
 "use client";
 
-import { Check, Edit05, LinkExternal01, XClose } from "@untitledui/icons";
-import { Badge } from "@/components/base/badges/badges";
-import { Button } from "@/components/base/buttons/button";
-import { LINK_CLASS, SURFACE_CLASS } from "@/components/styles";
+import { Badge } from "@eylulg/ui/badge";
+import { Button } from "@eylulg/ui/button";
+import { Card, CardBody, CardFooter, CardHeader } from "@eylulg/ui/card";
+import { cx } from "@eylulg/ui/cx";
+import { Check, ExternalLink, Pencil, X } from "lucide-react";
+import { LINK_CLASS } from "@/components/styles";
 import { lineUrl } from "@/lib/github";
 import { SEVERITY_LABEL } from "@/lib/markdown-export";
 import type { FindingEdit, PullRequestMeta, TriageStatus, TriagedFinding } from "@/lib/types";
-import { cx } from "@/utils/cx";
 import { FindingEditor } from "./finding-editor";
 import { InlineText } from "./inline-text";
 import { SEVERITY_COLOR } from "./severity";
@@ -38,7 +39,6 @@ export function titleInputId(id: string): string {
 }
 
 export function FindingCard({ finding, pr, linkLines, isActive, isEditing, onStatusChange, onEdit, onSaveEdit, onCloseEditor }: FindingCardProps) {
-    const titleId = `${findingDomId(finding.id)}-title`;
     const lines = finding.endLine ? `Lines ${finding.line} to ${finding.endLine}` : `Line ${finding.line}`;
 
     function handleAccept() {
@@ -62,69 +62,59 @@ export function FindingCard({ finding, pr, linkLines, isActive, isEditing, onSta
     }
 
     return (
-        <article
+        <Card
             id={findingDomId(finding.id)}
+            role="article"
             tabIndex={-1}
-            aria-labelledby={titleId}
+            aria-label={finding.title}
             className={cx(
-                SURFACE_CLASS,
-                "flex scroll-mt-40 flex-col gap-3 p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand md:p-5",
-                isActive && "ring-2 ring-brand",
+                "scroll-mt-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+                isActive && "ring-2 ring-focus",
                 finding.status === "dismissed" && "opacity-70",
             )}
         >
             <div className="flex flex-wrap items-center gap-2">
-                <Badge type="pill-color" size="sm" color={SEVERITY_COLOR[finding.severity]}>
-                    {SEVERITY_LABEL[finding.severity]}
-                </Badge>
-                <Badge type="pill-color" size="sm" color="gray">
-                    {finding.category}
-                </Badge>
+                <Badge color={SEVERITY_COLOR[finding.severity]}>{SEVERITY_LABEL[finding.severity]}</Badge>
+                <Badge color="gray">{finding.category}</Badge>
                 {finding.status !== "pending" && (
-                    <Badge type="pill-color" size="sm" color={finding.status === "accepted" ? "success" : "gray"}>
-                        {finding.status === "accepted" ? "Accepted" : "Dismissed"}
-                    </Badge>
+                    <Badge color={finding.status === "accepted" ? "success" : "gray"}>{finding.status === "accepted" ? "Accepted" : "Dismissed"}</Badge>
                 )}
-                {finding.edited && (
-                    <Badge type="pill-color" size="sm" color="purple">
-                        Edited
-                    </Badge>
-                )}
+                {finding.edited && <Badge color="brand">Edited</Badge>}
                 <span className="ml-auto text-xs text-tertiary">{Math.round(finding.confidence * 100)}% confident</span>
             </div>
 
-            <div className="flex flex-col gap-1">
-                <h3 id={titleId} className="text-md font-semibold text-primary">
-                    {finding.title}
-                </h3>
-                {linkLines && pr ? (
-                    <a
-                        href={lineUrl(pr, finding.file, finding.line, finding.endLine)}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`${lines} of ${finding.file} on GitHub (opens in a new tab)`}
-                        className={LINK_CLASS}
-                    >
-                        {lines}
-                        <LinkExternal01 aria-hidden="true" className="size-3.5" />
-                    </a>
-                ) : (
-                    <span className="text-sm font-medium text-tertiary">{lines}</span>
-                )}
-            </div>
+            <CardHeader
+                title={finding.title}
+                description={
+                    linkLines && pr ? (
+                        <a
+                            href={lineUrl(pr, finding.file, finding.line, finding.endLine)}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`${lines} of ${finding.file} on GitHub (opens in a new tab)`}
+                            className={LINK_CLASS}
+                        >
+                            {lines}
+                            <ExternalLink aria-hidden="true" className="size-3.5" />
+                        </a>
+                    ) : (
+                        lines
+                    )
+                }
+            />
 
             {isEditing ? (
                 <FindingEditor finding={finding} titleId={titleInputId(finding.id)} onSave={handleSave} onCancel={handleCancel} />
             ) : (
                 <>
-                    <div className="flex flex-col gap-2">
+                    <CardBody className="flex flex-col gap-2">
                         <InlineText text={finding.explanation} />
-                    </div>
+                    </CardBody>
                     {finding.suggestion !== undefined && <SuggestionDiff original={finding.originalCode} suggestion={finding.suggestion} />}
-                    <div className="flex flex-wrap gap-2">
+                    <CardFooter className="justify-start">
                         <Button
                             size="sm"
-                            color={finding.status === "accepted" ? "primary" : "secondary"}
+                            variant={finding.status === "accepted" ? "primary" : "secondary"}
                             iconLeading={Check}
                             aria-label={`Accept finding: ${finding.title}`}
                             aria-pressed={finding.status === "accepted"}
@@ -135,8 +125,8 @@ export function FindingCard({ finding, pr, linkLines, isActive, isEditing, onSta
                         </Button>
                         <Button
                             size="sm"
-                            color="secondary"
-                            iconLeading={XClose}
+                            variant="secondary"
+                            iconLeading={X}
                             aria-label={`Dismiss finding: ${finding.title}`}
                             aria-pressed={finding.status === "dismissed"}
                             aria-keyshortcuts="d"
@@ -147,17 +137,17 @@ export function FindingCard({ finding, pr, linkLines, isActive, isEditing, onSta
                         <Button
                             id={editButtonId(finding.id)}
                             size="sm"
-                            color="tertiary"
-                            iconLeading={Edit05}
+                            variant="tertiary"
+                            iconLeading={Pencil}
                             aria-label={`Edit finding: ${finding.title}`}
                             aria-keyshortcuts="e"
                             onPress={handleEdit}
                         >
                             Edit
                         </Button>
-                    </div>
+                    </CardFooter>
                 </>
             )}
-        </article>
+        </Card>
     );
 }

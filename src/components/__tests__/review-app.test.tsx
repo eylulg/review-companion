@@ -6,7 +6,7 @@ import { demoFixture } from "@/lib/demo";
 import type { ReviewEvent } from "@/lib/types";
 import { useReviewStore } from "@/store/review-store";
 import { SAMPLE_PR_URL, sampleEvents, sseResponse } from "@/test-utils/review-stream";
-import { AppShell } from "../app-shell";
+import { ReviewApp } from "../review-app";
 
 function stubServer(...responses: Response[]) {
     const fetchMock = vi.fn<typeof fetch>();
@@ -22,7 +22,7 @@ function requestBody(fetchMock: ReturnType<typeof stubServer>, call = 0): unknow
 
 async function startReview() {
     const user = userEvent.setup();
-    const view = render(<AppShell demo={false} defaultModel="claude-opus-5-5" />);
+    const view = render(<ReviewApp demo={false} defaultModel="claude-opus-5-5" />);
     await user.type(screen.getByRole("textbox", { name: "Pull request URL" }), SAMPLE_PR_URL);
     await user.click(screen.getByRole("button", { name: "Start review" }));
     return { user, ...view };
@@ -51,13 +51,13 @@ const metaEvent: ReviewEvent = {
     model: "claude-opus-5-5",
 };
 
-describe("AppShell", () => {
+describe("ReviewApp", () => {
     beforeEach(() => {
         useReviewStore.getState().reset();
     });
 
     it("has no axe violations on the landing page", async () => {
-        const { container } = render(<AppShell demo defaultModel="claude-opus-5-5" />);
+        const { container } = render(<ReviewApp demo defaultModel="claude-opus-5-5" />);
 
         expect((await axe(container)).violations).toEqual([]);
     });
@@ -65,7 +65,7 @@ describe("AppShell", () => {
     it("refuses to start a review for a URL that is not a pull request", async () => {
         const fetchMock = stubServer();
         const user = userEvent.setup();
-        render(<AppShell demo={false} defaultModel="claude-opus-5-5" />);
+        render(<ReviewApp demo={false} defaultModel="claude-opus-5-5" />);
 
         await user.type(screen.getByRole("textbox", { name: "Pull request URL" }), "not a url");
         await user.click(screen.getByRole("button", { name: "Start review" }));
@@ -77,9 +77,10 @@ describe("AppShell", () => {
     it("sends the URL and the chosen model, then moves focus to the review heading", async () => {
         const fetchMock = stubServer(sseResponse(await sampleEvents()));
         const user = userEvent.setup();
-        render(<AppShell demo={false} defaultModel="claude-opus-5-5" />);
+        render(<ReviewApp demo={false} defaultModel="claude-opus-5-5" />);
 
-        await user.click(screen.getByRole("radio", { name: /claude sonnet 5\.5/i }));
+        await user.click(screen.getByRole("button", { name: /model/i }));
+        await user.click(await screen.findByRole("option", { name: /claude sonnet 5\.5/i }));
         await user.type(screen.getByRole("textbox", { name: "Pull request URL" }), SAMPLE_PR_URL);
         await user.click(screen.getByRole("button", { name: "Start review" }));
 

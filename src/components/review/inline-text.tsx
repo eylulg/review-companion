@@ -9,7 +9,7 @@ export function InlineText({ text }: { text: string }) {
                 <p key={index} className="text-sm whitespace-pre-wrap text-secondary">
                     {paragraph.split(/(`[^`\n]+`)/g).map((part, partIndex) =>
                         part.startsWith("`") && part.endsWith("`") && part.length > 2 ? (
-                            <code key={partIndex} className="rounded bg-secondary px-1 py-0.5 font-mono text-[0.85em] text-primary">
+                            <code key={partIndex} className="rounded-xs bg-secondary px-1 py-0.5 font-data text-[0.85em] text-primary">
                                 {part.slice(1, -1)}
                             </code>
                         ) : (

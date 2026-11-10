@@ -1,4 +1,4 @@
-import { cx } from "@/utils/cx";
+import { cx } from "@eylulg/ui/cx";
 
 interface SuggestionDiffProps {
     original?: string;
@@ -8,11 +8,11 @@ interface SuggestionDiffProps {
 /** Shows the cited lines and the suggested replacement as a small removed and added diff. */
 export function SuggestionDiff({ original, suggestion }: SuggestionDiffProps) {
     return (
-        <figure className="overflow-hidden rounded-lg ring-1 ring-secondary">
-            <figcaption className="border-b border-secondary bg-secondary px-3 py-1.5 text-xs font-medium text-secondary">Suggested change</figcaption>
-            <div className="font-mono text-xs leading-5 text-primary">
-                {original !== undefined && <DiffLines label="Current code" marker="-" text={original} className="bg-error-primary" />}
-                <DiffLines label="Suggested code" marker="+" text={suggestion} className="bg-success-primary" />
+        <figure className="overflow-hidden rounded-lg border border-subtle">
+            <figcaption className="border-b border-subtle bg-secondary px-3 py-1.5 text-xs font-medium text-secondary">Suggested change</figcaption>
+            <div className="font-data text-xs leading-5 text-primary">
+                {original !== undefined && <DiffLines label="Current code" marker="-" text={original} className="bg-error-subtle" />}
+                <DiffLines label="Suggested code" marker="+" text={suggestion} className="bg-success-subtle" />
             </div>
         </figure>
     );

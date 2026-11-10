@@ -1,14 +1,8 @@
+import type { ReactNode } from "react";
+import { AppShell, SiteFooter, themeInitScript } from "@eylulg/ui/chrome";
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
-import { Theme } from "@/providers/theme";
 import "@/styles/globals.css";
-import { cx } from "@/utils/cx";
-
-const inter = Inter({
-    subsets: ["latin"],
-    display: "swap",
-    variable: "--font-inter",
-});
+import { Nav } from "./nav";
 
 export const metadata: Metadata = {
     title: "Review Companion",
@@ -23,12 +17,17 @@ export const viewport: Viewport = {
     colorScheme: "light dark",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
     return (
-        // next-themes sets the class before first paint, so suppress the attribute mismatch it causes.
+        // The theme script changes the class on <html> before React hydrates, so suppress the attribute mismatch.
         <html lang="en" suppressHydrationWarning>
-            <body className={cx(inter.variable, "bg-primary text-primary antialiased")}>
-                <Theme>{children}</Theme>
+            <head>
+                <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+            </head>
+            <body>
+                <AppShell header={<Nav />} footer={<SiteFooter currentId="review-companion" />}>
+                    {children}
+                </AppShell>
             </body>
         </html>
     );

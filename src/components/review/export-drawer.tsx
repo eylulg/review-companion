@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Copy01 } from "@untitledui/icons";
-import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
-import { Button } from "@/components/base/buttons/button";
-import { TextArea } from "@/components/base/textarea/textarea";
-import { Toggle } from "@/components/base/toggle/toggle";
+import { Button } from "@eylulg/ui/button";
+import { Drawer } from "@eylulg/ui/drawer";
+import { Switch } from "@eylulg/ui/switch";
+import { Textarea } from "@eylulg/ui/textarea";
+import { Copy } from "lucide-react";
 import { buildReviewMarkdown, exportableFindings } from "@/lib/markdown-export";
 import type { FileSummary, PullRequestMeta, TriagedFinding } from "@/lib/types";
 
@@ -53,33 +53,40 @@ export default function ExportDrawer({ onClose, findings, files, pr, linkLines }
     }
 
     return (
-        <SlideoutMenu isOpen onOpenChange={handleOpenChange} isDismissable dialogLabelledBy="export-heading" className="max-w-full md:max-w-2xl">
-            <SlideoutMenu.Header onClose={onClose}>
-                <h2 id="export-heading" className="text-lg font-semibold text-primary">
-                    Export review comments
-                </h2>
-                <p className="mt-1 pr-8 text-sm text-tertiary">
-                    GitHub Markdown grouped by file. Paste each block as a comment on the cited line, or paste everything as the review summary.
-                </p>
-            </SlideoutMenu.Header>
-            <div className="flex min-h-0 w-full flex-1 flex-col gap-4 px-4 md:px-6">
-                <Toggle
-                    label="Include findings you have not triaged"
-                    hint={acceptedCount === 0 ? "Nothing is accepted yet, so every finding that is not dismissed is included." : `${acceptedCount} accepted.`}
+        <Drawer
+            isOpen
+            onOpenChange={handleOpenChange}
+            size="lg"
+            title="Export review comments"
+            description="GitHub Markdown grouped by file. Paste each block as a comment on the cited line, or paste everything as the review summary."
+            footer={
+                <>
+                    <p role="status" className="text-sm text-secondary sm:mr-auto sm:self-center">
+                        {copyStatus}
+                    </p>
+                    <Button iconLeading={Copy} onPress={handleCopy} isDisabled={count === 0}>
+                        Copy Markdown
+                    </Button>
+                </>
+            }
+        >
+            <div className="flex flex-col gap-4">
+                <Switch
                     isSelected={effectiveIncludePending}
                     isDisabled={acceptedCount === 0}
                     onChange={setIncludePending}
+                    hint={acceptedCount === 0 ? "Nothing is accepted yet, so every finding that is not dismissed is included." : `${acceptedCount} accepted.`}
+                >
+                    Include findings you have not triaged
+                </Switch>
+                <Textarea
+                    label={`Markdown for ${count} ${count === 1 ? "comment" : "comments"}`}
+                    value={markdown}
+                    isReadOnly
+                    rows={18}
+                    textareaClassName="font-data"
                 />
-                <TextArea label={`Markdown for ${count} ${count === 1 ? "comment" : "comments"}`} value={markdown} isReadOnly rows={18} />
             </div>
-            <SlideoutMenu.Footer className="flex flex-wrap items-center gap-3">
-                <p role="status" className="text-sm text-secondary">
-                    {copyStatus}
-                </p>
-                <Button className="ml-auto" iconLeading={Copy01} onPress={handleCopy} isDisabled={count === 0}>
-                    Copy Markdown
-                </Button>
-            </SlideoutMenu.Footer>
-        </SlideoutMenu>
+        </Drawer>
     );
 }

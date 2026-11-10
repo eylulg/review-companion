@@ -27,17 +27,6 @@ const config = [
         files: ["scripts/**"],
         rules: { "no-console": "off" },
     },
-    {
-        // Untitled UI components are copied in as they ship; keep them close to upstream.
-        files: ["src/components/base/**", "src/components/application/**", "src/components/foundations/**"],
-        rules: {
-            "@typescript-eslint/no-empty-object-type": "off",
-            "@next/next/no-img-element": "off",
-            "jsx-a11y/img-redundant-alt": "off",
-            "jsx-a11y/click-events-have-key-events": "off",
-            "jsx-a11y/no-static-element-interactions": "off",
-        },
-    },
 ];
 
 export default config;

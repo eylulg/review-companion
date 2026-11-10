@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, LinkExternal01 } from "@untitledui/icons";
+import { Button } from "@eylulg/ui/button";
+import { Kbd } from "@eylulg/ui/kbd";
+import { CircleAlert, ExternalLink } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useShallow } from "zustand/react/shallow";
-import { Button } from "@/components/base/buttons/button";
 import { LINK_CLASS } from "@/components/styles";
 import { useReviewShortcuts } from "@/hooks/use-review-shortcuts";
 import { fileAnchor, groupFindingsByFile } from "@/lib/ordering";
@@ -133,14 +134,14 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
         <>
             <SummaryBar findings={findings} model={model} usage={usage} demo={demo} onExport={handleOpenExport} onNewReview={onNewReview} />
 
-            <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 md:px-6">
+            <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
                     {pr && (
                         <p className="text-sm text-tertiary">
                             {pr.owner}/{pr.repo} #{pr.number} by {pr.author}
                         </p>
                     )}
-                    <h1 ref={heading} tabIndex={-1} className="text-display-xs font-semibold break-words text-primary outline-hidden md:text-display-sm">
+                    <h1 ref={heading} tabIndex={-1} className="text-display-xs md:text-display-sm font-semibold break-words text-primary outline-none">
                         {title}
                     </h1>
                     {pr && !demo && (
@@ -152,13 +153,13 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
                             className={LINK_CLASS}
                         >
                             Open the pull request on GitHub
-                            <LinkExternal01 aria-hidden="true" className="size-3.5" />
+                            <ExternalLink aria-hidden="true" className="size-3.5" />
                         </a>
                     )}
                     <ProgressPanel status={status} progress={progress} />
                     {status === "streaming" && (
                         <div>
-                            <Button size="sm" color="secondary" onPress={handleStop}>
+                            <Button size="sm" variant="secondary" onPress={handleStop}>
                                 Stop review
                             </Button>
                         </div>
@@ -166,18 +167,18 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
                 </div>
 
                 {error && (
-                    <div role="alert" className="flex flex-col gap-3 rounded-xl bg-error-primary p-4 ring-1 ring-error_subtle">
-                        <p className="flex items-start gap-2 text-sm font-medium text-error-primary">
-                            <AlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                    <div role="alert" className="flex flex-col gap-3 rounded-xl border border-error bg-error-subtle p-4">
+                        <p className="flex items-start gap-2 text-sm font-medium text-error">
+                            <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                             {error.message}
                         </p>
                         <div className="flex flex-wrap gap-2">
                             {request && (
-                                <Button size="sm" color="secondary" onPress={handleRetry}>
+                                <Button size="sm" variant="secondary" onPress={handleRetry}>
                                     Try again
                                 </Button>
                             )}
-                            <Button size="sm" color="tertiary" onPress={onNewReview}>
+                            <Button size="sm" variant="tertiary" onPress={onNewReview}>
                                 Review another pull request
                             </Button>
                         </div>
@@ -185,13 +186,13 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
                 )}
 
                 {(status === "interrupted" || status === "stopped") && request && (
-                    <div className="flex flex-wrap items-center gap-3 rounded-xl bg-secondary p-4 ring-1 ring-secondary">
+                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-subtle bg-secondary p-4">
                         <p className="text-sm text-secondary">
                             {status === "interrupted"
                                 ? "The page was reloaded while the review was running. Findings that arrived are kept."
                                 : "You stopped the review. Findings that arrived are kept."}
                         </p>
-                        <Button id={RUN_AGAIN_ID} size="sm" color="secondary" onPress={handleRetry}>
+                        <Button id={RUN_AGAIN_ID} size="sm" variant="secondary" onPress={handleRetry}>
                             Run the review again
                         </Button>
                     </div>
@@ -237,9 +238,9 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
                                     key={group.path}
                                     id={fileAnchor(group.path)}
                                     aria-labelledby={`${fileAnchor(group.path)}-heading`}
-                                    className="flex scroll-mt-24 flex-col gap-3"
+                                    className="flex scroll-mt-20 flex-col gap-3"
                                 >
-                                    <h3 id={`${fileAnchor(group.path)}-heading`} className="font-mono text-sm font-semibold break-all text-secondary">
+                                    <h3 id={`${fileAnchor(group.path)}-heading`} className="font-data text-sm font-semibold break-all text-secondary">
                                         {group.path}
                                     </h3>
                                     <ol className="flex flex-col gap-3">
@@ -269,8 +270,4 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
             {exportOpen && <ExportDrawer onClose={handleCloseExport} findings={findings} files={files} pr={pr} linkLines={linkLines} />}
         </>
     );
-}
-
-function Kbd({ children }: { children: string }) {
-    return <kbd className="rounded border border-secondary bg-secondary px-1.5 py-0.5 font-mono text-xs text-secondary">{children}</kbd>;
 }

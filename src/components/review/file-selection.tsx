@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/base/buttons/button";
-import { Checkbox } from "@/components/base/checkbox/checkbox";
-import { SURFACE_CLASS } from "@/components/styles";
+import { Button } from "@eylulg/ui/button";
+import { Card } from "@eylulg/ui/card";
+import { Checkbox } from "@eylulg/ui/checkbox";
+import { cx } from "@eylulg/ui/cx";
 import { SKIP_REASON_LABEL } from "@/lib/file-filters";
 import type { FileSummary } from "@/lib/types";
-import { cx } from "@/utils/cx";
 
 interface FileSelectionProps {
     files: FileSummary[];
@@ -47,7 +47,7 @@ export function FileSelection({ files, maxChangedLines, onSubmit }: FileSelectio
     }
 
     return (
-        <section aria-labelledby="selection-heading" className={cx(SURFACE_CLASS, "flex flex-col gap-4 p-4 md:p-6")}>
+        <Card role="region" aria-labelledby="selection-heading">
             <div className="flex flex-col gap-1">
                 <h2 id="selection-heading" className="text-lg font-semibold text-primary">
                     Pick the files to review
@@ -65,7 +65,7 @@ export function FileSelection({ files, maxChangedLines, onSubmit }: FileSelectio
                 ))}
             </ul>
             <div className="flex flex-wrap items-center gap-3">
-                <p role="status" className={cx("text-sm font-medium", over ? "text-error-primary" : "text-secondary")}>
+                <p role="status" className={cx("text-sm font-medium", over ? "text-error" : "text-secondary")}>
                     {total.toLocaleString("en-US")} of {maxChangedLines.toLocaleString("en-US")} lines selected
                     {over ? ". Remove some files to continue." : ""}
                 </p>
@@ -73,7 +73,7 @@ export function FileSelection({ files, maxChangedLines, onSubmit }: FileSelectio
                     Review {picked.size} {picked.size === 1 ? "file" : "files"}
                 </Button>
             </div>
-        </section>
+        </Card>
     );
 }
 
@@ -85,11 +85,8 @@ function FileCheckbox({ file, isSelected, onToggle }: { file: FileSummary; isSel
     }
 
     return (
-        <Checkbox
-            isSelected={isSelected}
-            onChange={handleChange}
-            label={<span className="font-mono break-all">{file.path}</span>}
-            hint={`${file.additions + file.deletions} changed lines${reason}`}
-        />
+        <Checkbox isSelected={isSelected} onChange={handleChange} hint={`${file.additions + file.deletions} changed lines${reason}`}>
+            <span className="font-data break-all">{file.path}</span>
+        </Checkbox>
     );
 }

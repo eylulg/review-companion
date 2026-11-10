@@ -1,9 +1,9 @@
-import type { BadgeColors } from "@/components/base/badges/badge-types";
+import type { BadgeColor } from "@eylulg/ui/badge";
 import type { Severity } from "@/lib/types";
 
-export const SEVERITY_COLOR: Record<Severity, BadgeColors> = {
+export const SEVERITY_COLOR: Record<Severity, BadgeColor> = {
     blocker: "error",
-    bug: "orange",
-    risk: "blue",
+    bug: "warning",
+    risk: "brand",
     nit: "gray",
 };

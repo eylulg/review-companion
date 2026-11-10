@@ -98,6 +98,8 @@ This calls GitHub and the Anthropic API and spends tokens.
 
 Node 24 and npm 11.
 
+Clone [`eylulg/ui`](https://github.com/eylulg/ui) next to this folder and build it once (`npm install && npm run build` inside it). The app depends on it as `file:../ui`.
+
 ```bash
 npm install
 cp .env.example .env.local   # optional: add ANTHROPIC_API_KEY, GITHUB_TOKEN
@@ -117,9 +119,11 @@ npm run test:e2e        # Playwright: production build in demo mode, axe in ligh
 
 The Anthropic SDK is replaced with a stub in every test, and GitHub is stubbed at `fetch`; no test calls a real API. The UI tests run the real pipeline over the demo fixture and stub only the network.
 
-CI (`.github/workflows/ci.yml`) runs a secret scan, commitlint on pull requests, then typecheck, lint, format check, knip, unit tests, build and the end-to-end test.
+CI (`.github/workflows/ci.yml`) checks out `eylulg/ui` next to the repository and builds it before `npm ci`, then runs a secret scan, commitlint on pull requests, then typecheck, lint, format check, knip, unit tests, build and the end-to-end test.
 
 ## Deploying to Vercel
+
+Vercel cannot resolve `file:../ui`, because the sibling checkout does not exist there. Deploys need the component library on npm: once `@eylulg/ui` is published, replace the `file:../ui` range in `package.json` with `^1.0.0` (and remove the `turbopack.root` setting in `next.config.ts` and the library checkout step in CI). Until then the app runs locally and in CI only.
 
 1. Import the repository in Vercel. The framework preset is Next.js; no build settings are needed.
 2. Set environment variables for Production (and Preview if you want live reviews there): `ANTHROPIC_API_KEY`, optionally `GITHUB_TOKEN`, `REVIEW_MODEL` and the limits. Leave `ANTHROPIC_API_KEY` unset for a free demo deployment.
@@ -129,7 +133,7 @@ The rate limit lives in memory, so each serverless instance counts separately. F
 
 ## Stack
 
-Next.js 16 App Router, React 19, TypeScript strict, Tailwind CSS 4, Untitled UI React (free components), React Aria, Zustand, zod, `@anthropic-ai/sdk`, Vitest with Testing Library and vitest-axe, Playwright with axe-core.
+Next.js 16 App Router, React 19, TypeScript strict, Tailwind CSS 4, the shared `@eylulg/ui` design system (React Aria Components, `review` theme variant), lucide-react, Zustand, zod, `@anthropic-ai/sdk`, Vitest with Testing Library and vitest-axe, Playwright with axe-core.
 
 ## License
 

@@ -6,10 +6,11 @@ import { Kbd } from "@eylulg/ui/kbd";
 import { CircleAlert, ExternalLink } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useShallow } from "zustand/react/shallow";
-import { LINK_CLASS } from "@/components/styles";
+import { FILE_GROUP_CLASS, LINK_CLASS } from "@/components/styles";
 import { useReviewShortcuts } from "@/hooks/use-review-shortcuts";
+import { parsePullRequestUrl } from "@/lib/github";
 import { fileAnchor, groupFindingsByFile } from "@/lib/ordering";
-import type { FindingEdit, ReviewRequest, TriageStatus } from "@/lib/types";
+import type { FindingEdit, ReviewErrorCode, ReviewRequest, TriageStatus } from "@/lib/types";
 import { useReviewStore } from "@/store/review-store";
 import { FileList } from "./file-list";
 import { FileSelection } from "./file-selection";
@@ -27,6 +28,14 @@ const ExportDrawer = dynamic(() => import("./export-drawer"), { ssr: false });
 
 const RUN_AGAIN_ID = "run-review-again";
 
+/** Errors the user fixes by choosing fewer files, so the picker comes back with the limit explained. */
+const SELECTION_ERRORS: ReviewErrorCode[] = ["too_costly", "too_large"];
+
+function shortTitle(url: string): string {
+    const ref = parsePullRequestUrl(url);
+    return ref ? `${ref.owner}/${ref.repo}#${ref.number}` : url;
+}
+
 function focusById(id: string, scroll = false) {
     // Wait a frame so the element exists after the state change that reveals it.
     requestAnimationFrame(() => {
@@ -40,13 +49,14 @@ function focusById(id: string, scroll = false) {
 }
 
 export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenProps) {
-    const { request, status, progress, pr, files, findings, usage, warnings, error, activeId, demo, model, maxChangedLines } = useReviewStore(
+    const { request, status, progress, pr, files, changedLines, findings, usage, warnings, error, activeId, demo, model, maxChangedLines } = useReviewStore(
         useShallow((state) => ({
             request: state.request,
             status: state.status,
             progress: state.progress,
             pr: state.pr,
             files: state.files,
+            changedLines: state.changedLines,
             findings: state.findings,
             usage: state.usage,
             warnings: state.warnings,
@@ -61,14 +71,23 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
     const [editingId, setEditingId] = useState<string | null>(null);
     const [exportOpen, setExportOpen] = useState(false);
     const heading = useRef<HTMLHeadingElement>(null);
+    const alert = useRef<HTMLDivElement>(null);
     const groups = groupFindingsByFile(findings, files);
     const order = groups.flatMap((group) => group.findings.map((finding) => finding.id));
     const linkLines = !demo;
-    const title = pr?.title ?? request?.url ?? "Review";
+    const title = pr?.title ?? (request ? shortTitle(request.url) : "Review");
+    const errorCode = error?.code;
+    const pickAgain = status === "error" && errorCode !== undefined && SELECTION_ERRORS.includes(errorCode) && files.some((file) => file.selected);
+    const showSelection = status === "needs_selection" || pickAgain;
+    const panelProgress = status === "needs_selection" ? { message: `This pull request has ${changedLines} changed lines. Pick files to review.` } : progress;
 
     useEffect(() => {
         heading.current?.focus();
     }, []);
+
+    useEffect(() => {
+        if (errorCode && SELECTION_ERRORS.includes(errorCode)) alert.current?.focus();
+    }, [errorCode]);
 
     function moveAndFocus(direction: 1 | -1) {
         moveActive(direction, order);
@@ -104,11 +123,16 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
     }
 
     function handleRetry() {
-        if (request) onStart(request);
+        if (!request) return;
+        onStart(request);
+        // The button that was pressed unmounts, so focus the heading instead of losing it to the body.
+        heading.current?.focus();
     }
 
     function handleSelection(paths: string[]) {
-        if (request) onStart({ ...request, selectedFiles: paths });
+        if (!request) return;
+        onStart({ ...request, selectedFiles: paths });
+        heading.current?.focus();
     }
 
     function handleOpenExport() {
@@ -132,7 +156,7 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
 
     return (
         <>
-            <SummaryBar findings={findings} model={model} usage={usage} demo={demo} onExport={handleOpenExport} onNewReview={onNewReview} />
+            {pr && <SummaryBar findings={findings} model={model} usage={usage} demo={demo} onExport={handleOpenExport} onNewReview={onNewReview} />}
 
             <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
@@ -156,7 +180,7 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
                             <ExternalLink aria-hidden="true" className="size-3.5" />
                         </a>
                     )}
-                    <ProgressPanel status={status} progress={progress} />
+                    <ProgressPanel status={status} progress={panelProgress} />
                     {status === "streaming" && (
                         <div>
                             <Button size="sm" variant="secondary" onPress={handleStop}>
@@ -167,13 +191,13 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
                 </div>
 
                 {error && (
-                    <div role="alert" className="flex flex-col gap-3 rounded-xl border border-error bg-error-subtle p-4">
+                    <div ref={alert} role="alert" tabIndex={-1} className="flex flex-col gap-3 rounded-xl border border-error bg-error-subtle p-4 outline-none">
                         <p className="flex items-start gap-2 text-sm font-medium text-error">
                             <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                             {error.message}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                            {request && (
+                            {request && !pickAgain && (
                                 <Button size="sm" variant="secondary" onPress={handleRetry}>
                                     Try again
                                 </Button>
@@ -206,11 +230,19 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
                     </ul>
                 )}
 
-                {status === "needs_selection" && request && <FileSelection files={files} maxChangedLines={maxChangedLines} onSubmit={handleSelection} />}
+                {showSelection && request && (
+                    <FileSelection
+                        files={files}
+                        maxChangedLines={maxChangedLines}
+                        previousSelection={pickAgain ? request.selectedFiles : undefined}
+                        overCostLimit={pickAgain}
+                        onSubmit={handleSelection}
+                    />
+                )}
 
-                {status !== "needs_selection" && files.length > 0 && (
+                {!showSelection && files.length > 0 && (
                     <div className="grid gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
-                        <aside className="md:sticky md:top-20 md:max-h-[calc(100dvh-6rem)] md:self-start md:overflow-y-auto">
+                        <aside className="md:sticky md:top-[calc(var(--summary-bottom,12rem)+1rem)] md:max-h-[calc(100dvh-var(--summary-bottom,12rem)-2rem)] md:self-start md:overflow-y-auto">
                             <FileList files={files} findings={findings} />
                         </aside>
 
@@ -238,9 +270,13 @@ export function ReviewScreen({ onStart, onCancel, onNewReview }: ReviewScreenPro
                                     key={group.path}
                                     id={fileAnchor(group.path)}
                                     aria-labelledby={`${fileAnchor(group.path)}-heading`}
-                                    className="flex scroll-mt-20 flex-col gap-3"
+                                    className={FILE_GROUP_CLASS}
                                 >
-                                    <h3 id={`${fileAnchor(group.path)}-heading`} className="font-data text-sm font-semibold break-all text-secondary">
+                                    <h3
+                                        id={`${fileAnchor(group.path)}-heading`}
+                                        tabIndex={-1}
+                                        className="font-data text-sm font-semibold break-all text-secondary outline-none"
+                                    >
                                         {group.path}
                                     </h3>
                                     <ol className="flex flex-col gap-3">

@@ -11,11 +11,16 @@ import type { FileSummary } from "@/lib/types";
 interface FileSelectionProps {
     files: FileSummary[];
     maxChangedLines: number;
+    /** The files of the review that was refused, so the user starts from what they chose. */
+    previousSelection?: string[];
+    /** The server refused the selection for its estimated cost, which the line count below cannot show. */
+    overCostLimit?: boolean;
     onSubmit: (paths: string[]) => void;
 }
 
 /** Picks files in diff order while they fit under the cap. */
-function initialSelection(files: FileSummary[], maxChangedLines: number): Set<string> {
+function initialSelection(files: FileSummary[], maxChangedLines: number, previous?: string[]): Set<string> {
+    if (previous) return new Set(previous);
     const picked = new Set<string>();
     let total = 0;
     for (const file of files) {
@@ -27,8 +32,8 @@ function initialSelection(files: FileSummary[], maxChangedLines: number): Set<st
     return picked;
 }
 
-export function FileSelection({ files, maxChangedLines, onSubmit }: FileSelectionProps) {
-    const [picked, setPicked] = useState(() => initialSelection(files, maxChangedLines));
+export function FileSelection({ files, maxChangedLines, previousSelection, overCostLimit = false, onSubmit }: FileSelectionProps) {
+    const [picked, setPicked] = useState(() => initialSelection(files, maxChangedLines, previousSelection));
     const eligible = files.filter((file) => file.selected);
     const total = eligible.filter((file) => picked.has(file.path)).reduce((sum, file) => sum + file.additions + file.deletions, 0);
     const over = total > maxChangedLines;
@@ -53,8 +58,9 @@ export function FileSelection({ files, maxChangedLines, onSubmit }: FileSelectio
                     Pick the files to review
                 </h2>
                 <p className="text-sm text-tertiary">
-                    This pull request changes more than {maxChangedLines.toLocaleString("en-US")} lines, the most one review covers. Choose the files that
-                    matter most.
+                    {overCostLimit
+                        ? "The files you chose are too large for one review. Remove some or pick smaller ones, then review again."
+                        : `This pull request changes more than ${maxChangedLines.toLocaleString("en-US")} lines, the most one review covers. Choose the files that matter most.`}
                 </p>
             </div>
             <ul className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">

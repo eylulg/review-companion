@@ -15,6 +15,13 @@ if (typeof window !== "undefined") {
 
     // jsdom does not implement these.
     if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = () => {};
+    if (!window.ResizeObserver) {
+        window.ResizeObserver = class {
+            observe() {}
+            unobserve() {}
+            disconnect() {}
+        };
+    }
     if (!window.matchMedia) {
         window.matchMedia = (query: string) =>
             ({

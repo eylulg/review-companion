@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { Badge } from "@eylulg/ui/badge";
 import { SKIP_REASON_LABEL, basename } from "@/lib/file-filters";
 import { fileAnchor } from "@/lib/ordering";
@@ -30,17 +31,7 @@ export function FileList({ files, findings }: FileListProps) {
                         const count = counts.get(file.path) ?? 0;
                         return (
                             <li key={file.path}>
-                                <a
-                                    href={`#${fileAnchor(file.path)}`}
-                                    title={file.path}
-                                    aria-label={`${basename(file.path)} ${count} ${count === 1 ? "finding" : "findings"}, ${file.path}`}
-                                    className={FILE_LINK_CLASS}
-                                >
-                                    <span className="min-w-0 truncate">{basename(file.path)}</span>{" "}
-                                    <Badge size="sm" color={count > 0 ? "brand" : "gray"}>
-                                        {count}
-                                    </Badge>
-                                </a>
+                                <FileLink file={file} count={count} />
                             </li>
                         );
                     })}
@@ -60,5 +51,32 @@ export function FileList({ files, findings }: FileListProps) {
                 </div>
             )}
         </nav>
+    );
+}
+
+function FileLink({ file, count }: { file: FileSummary; count: number }) {
+    // The default hash jump would leave focus on the body (the target is not focusable), so scroll the group
+    // below the sticky bars ourselves and put focus on its heading.
+    function handleClick(event: MouseEvent<HTMLAnchorElement>) {
+        const group = document.getElementById(fileAnchor(file.path));
+        if (!group) return;
+        event.preventDefault();
+        group.scrollIntoView({ block: "start" });
+        document.getElementById(`${fileAnchor(file.path)}-heading`)?.focus({ preventScroll: true });
+    }
+
+    return (
+        <a
+            href={`#${fileAnchor(file.path)}`}
+            title={file.path}
+            aria-label={`${basename(file.path)} ${count} ${count === 1 ? "finding" : "findings"}, ${file.path}`}
+            className={FILE_LINK_CLASS}
+            onClick={handleClick}
+        >
+            <span className="min-w-0 truncate">{basename(file.path)}</span>{" "}
+            <Badge size="sm" color={count > 0 ? "brand" : "gray"}>
+                {count}
+            </Badge>
+        </a>
     );
 }

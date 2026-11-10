@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@eylulg/ui/button";
 import { Stat } from "@eylulg/ui/stat";
 import { Download, Plus } from "lucide-react";
@@ -17,14 +18,38 @@ interface SummaryBarProps {
 }
 
 export function SummaryBar({ findings, model, usage, demo, onExport, onNewReview }: SummaryBarProps) {
+    const bar = useRef<HTMLElement>(null);
     const counts = severityCounts(findings);
     const accepted = findings.filter((finding) => finding.status === "accepted").length;
     const dismissed = findings.filter((finding) => finding.status === "dismissed").length;
     const total = usage.inputTokens + usage.outputTokens;
     const cost = model ? estimateCostUsd(model, usage.inputTokens, usage.outputTokens) : 0;
 
+    useEffect(() => {
+        const element = bar.current;
+        if (!element) return;
+        const root = document.documentElement;
+        const publish = () => {
+            const header = document.querySelector("header")?.getBoundingClientRect().height ?? 0;
+            root.style.setProperty("--summary-top", `${header}px`);
+            root.style.setProperty("--summary-bottom", `${header + element.offsetHeight}px`);
+        };
+        publish();
+        const observer = new ResizeObserver(publish);
+        observer.observe(element);
+        return () => {
+            observer.disconnect();
+            root.style.removeProperty("--summary-top");
+            root.style.removeProperty("--summary-bottom");
+        };
+    }, []);
+
     return (
-        <section aria-label="Review summary" className="flex flex-col gap-3 border-b border-subtle bg-primary py-3 md:sticky md:top-16 md:z-30">
+        <section
+            ref={bar}
+            aria-label="Review summary"
+            className="flex flex-col gap-3 border-b border-subtle bg-primary py-3 md:sticky md:top-[var(--summary-top,3.5rem)] md:z-30"
+        >
             <ul aria-label="Open findings by severity" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {SEVERITIES.map((severity) => (
                     <li key={severity}>

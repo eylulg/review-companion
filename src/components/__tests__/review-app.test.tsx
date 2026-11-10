@@ -96,15 +96,17 @@ describe("ReviewApp", () => {
         expect(screen.getByText("Review complete: 9 findings")).toBeInTheDocument();
         expect(screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
             "src/api/users.ts",
-            "Search query is not URL encoded",
             "src/components/user-table.tsx",
+            "src/utils/paginate.ts",
+        ]);
+        expect(screen.getAllByRole("heading", { level: 4 }).map((heading) => heading.textContent)).toEqual([
+            "Search query is not URL encoded",
             "Out of order responses can overwrite newer results",
             "Typing in the search box never refetches",
             "Search input has no accessible name",
             "Clickable div cannot be reached with the keyboard",
             'Empty results read "Page 1 of 0"',
             "Next stays enabled on the last page",
-            "src/utils/paginate.ts",
             "No tests for the new pagination helpers",
             "pageCount drops the last partial page",
         ]);
@@ -148,7 +150,7 @@ describe("ReviewApp", () => {
         await user.click(screen.getByRole("button", { name: "Save changes" }));
 
         await waitFor(() => expect(within(article(0)).getByRole("button", { name: /^edit finding/i })).toHaveFocus());
-        expect(within(article(0)).getByRole("heading", { level: 3 })).toHaveTextContent("Encode the search query, add a test");
+        expect(within(article(0)).getByRole("heading", { level: 4 })).toHaveTextContent("Encode the search query, add a test");
         expect(within(article(0)).getByRole("button", { name: /^accept finding/i })).toHaveAttribute("aria-pressed", "false");
         expect(within(article(0)).getByRole("button", { name: /^dismiss finding/i })).toHaveAttribute("aria-pressed", "false");
     });
@@ -203,6 +205,37 @@ describe("ReviewApp", () => {
 
         await waitFor(() => expect(screen.getAllByRole("article")).toHaveLength(3));
         expect(requestBody(fetchMock, 1)).toMatchObject({ selectedFiles: ["src/api/users.ts", "src/utils/paginate.ts"] });
+    });
+
+    it("brings the file picker back, with the alert focused, when the cost limit refuses the chosen files", async () => {
+        const files = [
+            { path: "a.ts", additions: 1, deletions: 0, selected: true },
+            { path: "b.ts", additions: 1, deletions: 0, selected: true },
+        ];
+        stubServer(
+            sseResponse([
+                { ...metaEvent, files },
+                { type: "error", code: "too_costly", message: "This review would send too much. Pick fewer files." },
+            ]),
+        );
+
+        await startReview();
+
+        const alert = await screen.findByRole("alert");
+        const region = screen.getByRole("region", { name: "Pick the files to review" });
+        expect(alert).toHaveFocus();
+        expect(within(alert).queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+        expect(within(region).getByRole("checkbox", { name: /a\.ts/ })).toBeChecked();
+        expect(within(region).getByRole("button", { name: "Review 2 files" })).toBeEnabled();
+    });
+
+    it("moves focus to the file heading when a file in the list is chosen", async () => {
+        const { user } = await renderFinishedReview();
+        const files = screen.getByRole("navigation", { name: "Files in this pull request" });
+
+        await user.click(within(files).getByRole("link", { name: /paginate\.ts/ }));
+
+        expect(screen.getByRole("heading", { level: 3, name: "src/utils/paginate.ts" })).toHaveFocus();
     });
 
     it("blocks a file selection that goes over the cap", async () => {

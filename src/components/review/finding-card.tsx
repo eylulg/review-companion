@@ -5,7 +5,7 @@ import { Button } from "@eylulg/ui/button";
 import { Card, CardBody, CardFooter, CardHeader } from "@eylulg/ui/card";
 import { cx } from "@eylulg/ui/cx";
 import { Check, ExternalLink, Pencil, X } from "lucide-react";
-import { LINK_CLASS } from "@/components/styles";
+import { LINK_CLASS, SCROLL_TARGET_CLASS } from "@/components/styles";
 import { lineUrl } from "@/lib/github";
 import { SEVERITY_LABEL } from "@/lib/markdown-export";
 import type { FindingEdit, PullRequestMeta, TriageStatus, TriagedFinding } from "@/lib/types";
@@ -68,7 +68,8 @@ export function FindingCard({ finding, pr, linkLines, isActive, isEditing, onSta
             tabIndex={-1}
             aria-label={finding.title}
             className={cx(
-                "scroll-mt-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+                SCROLL_TARGET_CLASS,
+                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
                 isActive && "ring-2 ring-focus",
                 finding.status === "dismissed" && "opacity-70",
             )}
@@ -84,6 +85,7 @@ export function FindingCard({ finding, pr, linkLines, isActive, isEditing, onSta
             </div>
 
             <CardHeader
+                headingLevel={4}
                 title={finding.title}
                 description={
                     linkLines && pr ? (

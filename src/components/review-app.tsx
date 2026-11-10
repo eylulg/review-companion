@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { DemoBanner } from "@/components/demo-banner";
 import { Landing, URL_INPUT_ID } from "@/components/landing/landing";
-import { ReviewScreen } from "@/components/review/review-screen";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useReviewRunner } from "@/hooks/use-review-runner";
 import { useReviewStore } from "@/store/review-store";
+
+// The review screen, its cards and the store-driven triage code are only needed once a review starts.
+const ReviewScreen = dynamic(() => import("@/components/review/review-screen").then((module) => module.ReviewScreen), { ssr: false });
 
 interface ReviewAppProps {
     demo: boolean;

@@ -1,9 +1,7 @@
 "use client";
 
-import { z } from "zod";
 import { create } from "zustand";
-import { type StateStorage, createJSONStorage, persist } from "zustand/middleware";
-import { errorCodeSchema, fileSummarySchema, pullRequestMetaSchema, triagedFindingSchema, usageSchema } from "@/lib/schemas";
+import { type PersistStorage, persist } from "zustand/middleware";
 import type {
     FileSummary,
     FindingEdit,
@@ -18,6 +16,7 @@ import type {
     TriagedFinding,
     Usage,
 } from "@/lib/types";
+import type { PersistedSession } from "./persisted-session";
 
 interface ReviewData {
     request: ReviewRequest | null;
@@ -65,34 +64,28 @@ const initialState: ReviewData = {
     activeId: null,
 };
 
-const persistedSchema = z.object({
-    request: z.object({ url: z.string(), model: z.string(), includeSkipped: z.boolean(), selectedFiles: z.array(z.string()).optional() }).nullable(),
-    status: z.enum(["idle", "streaming", "needs_selection", "done", "error", "interrupted", "stopped"]),
-    pr: pullRequestMetaSchema.nullable(),
-    files: z.array(fileSummarySchema),
-    changedLines: z.number(),
-    maxChangedLines: z.number(),
-    demo: z.boolean(),
-    model: z.string().nullable(),
-    findings: z.array(triagedFindingSchema),
-    usage: usageSchema,
-    warnings: z.array(z.string()),
-    error: z.object({ code: errorCodeSchema, message: z.string() }).nullable(),
-    activeId: z.string().nullable(),
-});
+function readSession(name: string): string | null {
+    try {
+        return window.sessionStorage.getItem(name);
+    } catch {
+        return null;
+    }
+}
 
-/** sessionStorage can throw (private mode, disabled storage, quota); the app must keep working without it. */
-const safeSessionStorage: StateStorage = {
-    getItem: (name) => {
-        try {
-            return window.sessionStorage.getItem(name);
-        } catch {
-            return null;
-        }
+/**
+ * sessionStorage can throw (private mode, disabled storage, quota); the app must keep working without it.
+ * The validation schema (and zod with it) loads only when a saved session exists, so a first visit never downloads it.
+ */
+const sessionStorageAdapter: PersistStorage<PersistedSession> = {
+    getItem: async (name) => {
+        const raw = readSession(name);
+        if (raw === null) return null;
+        const { parsePersistedSession } = await import("./persisted-session");
+        return parsePersistedSession(raw);
     },
     setItem: (name, value) => {
         try {
-            window.sessionStorage.setItem(name, value);
+            window.sessionStorage.setItem(name, JSON.stringify(value));
         } catch {
             // Full or unavailable storage only means the session is not kept across reloads.
         }
@@ -187,7 +180,7 @@ export const useReviewStore = create<ReviewData & ReviewActions>()(
             version: 1,
             // Hydrated from the app shell after mount, so the server render and first client render match.
             skipHydration: true,
-            storage: createJSONStorage(() => safeSessionStorage),
+            storage: sessionStorageAdapter,
             partialize: ({ request, status, pr, files, changedLines, maxChangedLines, demo, model, findings, usage, warnings, error, activeId }) => ({
                 request,
                 status,
@@ -203,13 +196,6 @@ export const useReviewStore = create<ReviewData & ReviewActions>()(
                 error,
                 activeId,
             }),
-            merge: (persisted, current) => {
-                const parsed = persistedSchema.safeParse(persisted);
-                if (!parsed.success) return current;
-                // A stream cannot survive a reload: keep what arrived and say so.
-                const status = parsed.data.status === "streaming" ? "interrupted" : parsed.data.status;
-                return { ...current, ...parsed.data, status };
-            },
         },
     ),
 );

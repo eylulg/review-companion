@@ -13,7 +13,8 @@ import { buildChunks, selectReviewSet } from "../src/lib/chunking";
 import { createClaudeReviewer } from "../src/lib/claude-reviewer";
 import { serverConfig } from "../src/lib/config";
 import { parseUnifiedDiff } from "../src/lib/diff-parser";
-import { fetchPullRequest, parsePullRequestUrl } from "../src/lib/github";
+import { parsePullRequestUrl } from "../src/lib/github";
+import { fetchPullRequest } from "../src/lib/github-api";
 import type { DemoFixture } from "../src/lib/types";
 
 async function main() {

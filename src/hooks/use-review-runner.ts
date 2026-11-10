@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { streamReview } from "@/lib/review-client";
 import type { ReviewRequest } from "@/lib/types";
 import { useReviewStore } from "@/store/review-store";
 
@@ -16,6 +15,8 @@ async function run(request: ReviewRequest, signal: AbortSignal): Promise<void> {
     window.addEventListener("beforeunload", markLeaving);
     window.addEventListener("pagehide", markLeaving);
     try {
+        // The client parses events with zod, which the landing page does not otherwise need.
+        const { streamReview } = await import("@/lib/review-client");
         const finished = await streamReview(
             request,
             (event) => {

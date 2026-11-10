@@ -37,7 +37,7 @@ Same method as above, after relinking `@eylulg/ui` with lazy overlays (dialog, p
 | CLS                         | 0                  | 0                                  | 0       |
 | TBT                         | 3.5 ms             | 4.5 ms                             | +1 ms   |
 
-The landing grew by about 5 kB instead of shrinking. The landing here uses a `Select`, which the library could not split (see above), and the first-load chunks of the entries it uses gained the small loader that the lazy overlays need. The 250 kB script budget in `lighthouserc.cjs` still holds with 7 kB to spare.
+The landing grew by about 5 kB instead of shrinking. The cause was not isolated here: the library's own measurement shows a landing with a `Select` moving by about 1 kB, so the rest comes from this app's mix of components. The 250 kB script budget in `lighthouserc.cjs` still holds with 7 kB to spare.
 
 ## What changed
 

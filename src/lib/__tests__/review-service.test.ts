@@ -29,9 +29,10 @@ describe("runReview", () => {
         expect(messages(events, "stage")).toEqual([
             "Fetching sample/team-directory#42",
             "Reading the diff",
-            "Reviewing file 1 of 3: src/api/users.ts",
-            "Reviewing file 2 of 3: src/components/user-table.tsx",
-            "Reviewing file 3 of 3: src/utils/paginate.ts",
+            "Reviewing 3 files",
+            "Reviewed 1 of 3 files",
+            "Reviewed 2 of 3 files",
+            "Reviewed 3 of 3 files",
             "Review complete: 9 findings",
         ]);
         expect(events.filter((event) => event.type === "finding")).toHaveLength(9);
@@ -50,6 +51,19 @@ describe("runReview", () => {
         const events = await collect(runReview({ ...options, maxChangedLines: 20, selectedFiles }, deps()));
 
         expect(events.at(-1)).toMatchObject(last);
+    });
+
+    it("stops starting files once the output limit is reached and says so", async () => {
+        let calls = 0;
+        const reviewer: ChunkReviewer = async () => {
+            calls += 1;
+            return { raw: { findings: [] }, usage: { inputTokens: 100, outputTokens: 500 } };
+        };
+
+        const events = await collect(runReview({ ...options, concurrency: 1, maxOutputTokens: 500 }, deps(reviewer)));
+
+        expect(calls).toBe(1);
+        expect(messages(events, "warning")).toEqual(["Some files were not reviewed: this review reached the output limit set for this site."]);
     });
 
     it("stops before calling the model when the estimated input is over the cost limit", async () => {

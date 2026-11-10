@@ -124,7 +124,7 @@ function applyEventTo(state: ReviewData, event: ReviewEvent): Partial<ReviewData
                 status: "needs_selection",
                 changedLines: event.changedLines,
                 maxChangedLines: event.maxChangedLines,
-                progress: { message: `This pull request has ${event.changedLines} changed lines. Pick files to review.` },
+                progress: null,
             };
         case "finding":
             return {
@@ -153,7 +153,7 @@ export const useReviewStore = create<ReviewData & ReviewActions>()(
 
             fail: (code, message) => set({ status: "error", error: { code, message }, progress: null }),
 
-            stop: () => set({ status: "stopped", progress: { message: "Review stopped. Findings so far are kept." } }),
+            stop: () => set({ status: "stopped", progress: { message: "Review stopped" } }),
 
             setStatus: (id, status) =>
                 set((state) => ({

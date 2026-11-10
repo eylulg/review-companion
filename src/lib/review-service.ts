@@ -14,6 +14,8 @@ interface ReviewOptions {
     selectedFiles?: string[];
     maxChangedLines: number;
     maxInputTokens: number;
+    /** Stops starting new chunks once the model has produced this many output tokens in one review. */
+    maxOutputTokens?: number;
     maxLinesPerChunk?: number;
     concurrency?: number;
     demo: boolean;
@@ -92,26 +94,28 @@ export async function* runReview(options: ReviewOptions, deps: ReviewDependencie
             );
         }
 
-        const started: ReviewEvent[] = [];
-        const results = mapWithConcurrency(
-            chunks,
-            options.concurrency ?? 2,
-            (chunk) => deps.reviewChunk({ pr, chunk, model: options.model, signal: options.signal }),
-            (chunk, index) => {
-                const part = chunk.parts > 1 ? ` (part ${chunk.part} of ${chunk.parts})` : "";
-                started.push({
-                    type: "stage",
-                    stage: "reviewing",
-                    message: `Reviewing file ${index + 1} of ${chunks.length}: ${chunk.path}${part}`,
-                    current: index + 1,
-                    total: chunks.length,
-                });
-            },
-        );
+        yield {
+            type: "stage",
+            stage: "reviewing",
+            message: `Reviewing ${chunks.length} ${chunks.length === 1 ? "file" : "files"}`,
+            current: 0,
+            total: chunks.length,
+        };
+        let outputCeilingHit = false;
+        let outputSpent = 0;
+        const results = mapWithConcurrency(chunks, options.concurrency ?? 2, async (chunk) => {
+            if (options.maxOutputTokens !== undefined && outputSpent >= options.maxOutputTokens) {
+                outputCeilingHit = true;
+                return { raw: { findings: [] }, usage: { inputTokens: 0, outputTokens: 0 } };
+            }
+            const output = await deps.reviewChunk({ pr, chunk, model: options.model, signal: options.signal });
+            outputSpent += output.usage.outputTokens;
+            return output;
+        });
 
+        let completed = 0;
         let rejected = 0;
         let next = results.next();
-        yield* started.splice(0);
         for (let result = await next; !result.done; result = await next) {
             next = results.next();
             const settled = result.value;
@@ -130,7 +134,18 @@ export async function* runReview(options: ReviewOptions, deps: ReviewDependencie
                 yield { type: "finding", finding };
             }
             yield { type: "usage", usage: { ...usage } };
-            yield* started.splice(0);
+            completed += 1;
+            yield {
+                type: "stage",
+                stage: "reviewing",
+                message: `Reviewed ${completed} of ${chunks.length} ${chunks.length === 1 ? "file" : "files"}`,
+                current: completed,
+                total: chunks.length,
+            };
+        }
+
+        if (outputCeilingHit) {
+            yield { type: "warning", message: "Some files were not reviewed: this review reached the output limit set for this site." };
         }
 
         if (rejected > 0) {

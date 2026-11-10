@@ -10,7 +10,7 @@ interface ProgressPanelProps {
 /** The live region screen readers use to follow the stream. Always mounted so announcements are not lost. */
 export function ProgressPanel({ status, progress }: ProgressPanelProps) {
     const streaming = status === "streaming";
-    const percent = progress?.current && progress.total ? Math.round(((progress.current - 1) / progress.total) * 100) : null;
+    const percent = progress?.current !== undefined && progress.total ? Math.round((progress.current / progress.total) * 100) : null;
 
     return (
         <div className="flex flex-col gap-2">

@@ -39,9 +39,18 @@ const EXAMPLES: Example[] = [
     },
 ];
 
+/** Demo mode replays one saved review, so it offers exactly that one instead of three pull requests it cannot show. */
+const SAMPLE_EXAMPLE: Example = {
+    url: "https://github.com/sample/team-directory/pull/42",
+    repo: "sample/team-directory",
+    title: "Add search and pagination to the people table",
+    size: "3 files, 9 findings",
+};
+
 const INVALID_URL_MESSAGE = "Enter a pull request URL such as https://github.com/owner/repo/pull/123.";
 
 export function Landing({ demo, defaultModel, onStart }: LandingProps) {
+    const examples = demo ? [SAMPLE_EXAMPLE] : EXAMPLES;
     const [url, setUrl] = useState("");
     const [model, setModel] = useState(defaultModel);
     const [includeSkipped, setIncludeSkipped] = useState(false);
@@ -129,15 +138,15 @@ export function Landing({ demo, defaultModel, onStart }: LandingProps) {
 
             <section aria-labelledby="examples-heading" className="flex flex-col gap-3">
                 <h2 id="examples-heading" className="text-md font-semibold text-primary">
-                    Or try an example
+                    {demo ? "Or replay the sample review" : "Or try an example"}
                 </h2>
                 {demo && (
                     <p className="text-sm text-tertiary">
-                        In demo mode every example, and any URL you paste, replays the saved review of a sample pull request.
+                        Demo mode has one saved review, of a sample pull request. Any URL you paste replays it too, with no call to GitHub or Claude.
                     </p>
                 )}
                 <ul className="grid gap-3 md:grid-cols-3">
-                    {EXAMPLES.map((example) => (
+                    {examples.map((example) => (
                         <li key={example.url}>
                             <ExampleButton example={example} onSelect={handleExample} />
                         </li>

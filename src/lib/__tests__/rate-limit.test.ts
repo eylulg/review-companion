@@ -2,15 +2,22 @@ import { describe, expect, it } from "vitest";
 import { clientIp, createRateLimiter } from "../rate-limit";
 
 describe("createRateLimiter", () => {
-    it("allows a fixed number of requests per key and window", () => {
+    it("lets only settled, counted requests use up the allowance of a key and window", () => {
         let time = 0;
-        const check = createRateLimiter(2, 1000, () => time);
+        const reserve = createRateLimiter(2, 1000, () => time);
 
-        const results = [check("a").allowed, check("a").allowed, check("a"), check("b").allowed];
+        reserve("a").settle(false);
+        const first = reserve("a");
+        const second = reserve("a");
+        const whileRunning = reserve("a");
+        first.settle(true);
+        second.settle(true);
+        const afterTwo = reserve("a");
+        const other = reserve("b").allowed;
         time = 1000;
-        results.push(check("a").allowed);
+        const nextWindow = reserve("a").allowed;
 
-        expect(results).toEqual([true, true, { allowed: false, remaining: 0, retryAfterSeconds: 1 }, true, true]);
+        expect([whileRunning.allowed, afterTwo.allowed, afterTwo.retryAfterSeconds, other, nextWindow]).toEqual([false, false, 1, true, true]);
     });
 });
 

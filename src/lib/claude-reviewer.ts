@@ -4,7 +4,7 @@ import { findingsJsonSchema } from "./finding-schema";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
 import type { ChunkReviewer, Effort, Usage } from "./types";
 
-const MAX_OUTPUT_TOKENS = 32_000;
+const MAX_OUTPUT_TOKENS_PER_CHUNK = 32_000;
 
 function usageOf(message: Anthropic.Beta.BetaMessage): Usage {
     const usage = message.usage;
@@ -19,14 +19,14 @@ function usageOf(message: Anthropic.Beta.BetaMessage): Usage {
  * `findingsJsonSchema`. Server-side fallback is on: if the model declines for policy reasons the
  * API retries on the recommended fallback model instead of returning a refusal.
  */
-export function createClaudeReviewer(client: Anthropic, effort: Effort): ChunkReviewer {
+export function createClaudeReviewer(client: Anthropic, effort: Effort, maxOutputTokens = MAX_OUTPUT_TOKENS_PER_CHUNK): ChunkReviewer {
     return async ({ pr, chunk, model, signal }) => {
         let message: Anthropic.Beta.BetaMessage;
         try {
             const stream = client.beta.messages.stream(
                 {
                     model,
-                    max_tokens: MAX_OUTPUT_TOKENS,
+                    max_tokens: Math.min(MAX_OUTPUT_TOKENS_PER_CHUNK, maxOutputTokens),
                     betas: ["server-side-fallback-2026-07-01"],
                     fallbacks: "default",
                     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],

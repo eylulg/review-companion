@@ -77,11 +77,17 @@ export async function POST(request: Request): Promise<Response> {
     // Demo mode replays a saved review, so report the model that produced it.
     const model = demo ? demoFixture.model : requested;
 
+    let answered = false;
+    const reviewer = createClaudeReviewer(new Anthropic({ apiKey: config.apiKey }), config.effort, config.maxOutputTokens);
     const deps: ReviewDependencies = demo
         ? createDemoDependencies()
         : {
               fetchPullRequest: (pullRef, signal) => fetchPullRequest(pullRef, { token: config.githubToken, signal }),
-              reviewChunk: createClaudeReviewer(new Anthropic({ apiKey: config.apiKey }), config.effort),
+              reviewChunk: async (input) => {
+                  const output = await reviewer(input);
+                  if (output.usage.inputTokens > 0) answered = true;
+                  return output;
+              },
           };
 
     const events = runReview(
@@ -92,13 +98,22 @@ export async function POST(request: Request): Promise<Response> {
             selectedFiles: body.selectedFiles,
             maxChangedLines: config.maxChangedLines,
             maxInputTokens: config.maxInputTokens,
+            maxOutputTokens: config.maxOutputTokens,
             demo,
             signal: request.signal,
         },
         deps,
     );
 
-    return new Response(toSseStream(events), {
+    async function* counted() {
+        try {
+            yield* events;
+        } finally {
+            limit.settle(answered);
+        }
+    }
+
+    return new Response(toSseStream(counted()), {
         headers: {
             "Content-Type": "text/event-stream; charset=utf-8",
             "Cache-Control": "no-cache, no-transform",

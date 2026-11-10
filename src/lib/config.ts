@@ -16,6 +16,7 @@ const envSchema = z.object({
     REVIEW_EFFORT: z.enum(["low", "medium", "high", "xhigh", "max"]).catch("high"),
     MAX_CHANGED_LINES: positiveInt(DEFAULT_MAX_CHANGED_LINES),
     MAX_INPUT_TOKENS: positiveInt(120_000),
+    MAX_OUTPUT_TOKENS: positiveInt(40_000),
     RATE_LIMIT_REVIEWS: positiveInt(5),
     RATE_LIMIT_WINDOW_SECONDS: positiveInt(600),
 });
@@ -30,6 +31,7 @@ export function serverConfig() {
         effort: env.REVIEW_EFFORT,
         maxChangedLines: env.MAX_CHANGED_LINES,
         maxInputTokens: env.MAX_INPUT_TOKENS,
+        maxOutputTokens: env.MAX_OUTPUT_TOKENS,
         rateLimitPerWindow: env.RATE_LIMIT_REVIEWS,
         rateLimitWindowMs: env.RATE_LIMIT_WINDOW_SECONDS * 1000,
     };

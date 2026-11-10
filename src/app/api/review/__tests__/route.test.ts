@@ -33,6 +33,35 @@ async function eventsOf(response: Response) {
     return collect(readSseEvents(response.body));
 }
 
+function stubReviewWithKey() {
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    const pull = {
+        title: demoFixture.pr.title,
+        body: "",
+        html_url: demoFixture.pr.url,
+        user: { login: "a" },
+        head: { sha: "s", ref: "h" },
+        base: { ref: "main" },
+    };
+    vi.stubGlobal(
+        "fetch",
+        vi.fn(async (_url: string, init?: RequestInit) =>
+            new Headers(init?.headers).get("accept") === "application/vnd.github.diff" ? new Response(demoFixture.diff) : Response.json(pull),
+        ),
+    );
+    stream.mockImplementation((params: { messages: { content: string }[] }) => ({
+        finalMessage: async () => {
+            const path = /<diff file="([^"]+)"/.exec(params.messages[0]?.content ?? "")?.[1];
+            const saved = demoFixture.chunks[`${path}#1`];
+            return {
+                content: [{ type: "text", text: JSON.stringify(saved?.response ?? { findings: [] }) }],
+                stop_reason: "end_turn",
+                usage: { input_tokens: 1000, output_tokens: 100 },
+            };
+        },
+    }));
+}
+
 describe("POST /api/review", () => {
     beforeEach(() => {
         vi.resetModules();
@@ -71,50 +100,33 @@ describe("POST /api/review", () => {
         expect(stream).not.toHaveBeenCalled();
     });
 
-    it("rate limits each IP", async () => {
-        vi.stubEnv("ANTHROPIC_API_KEY", "");
-        vi.stubEnv("RATE_LIMIT_REVIEWS", "1");
-        const first = await post({ url: "o/r#1" });
-        await first.body?.cancel();
-
-        const second = await post({ url: "o/r#1" });
-
-        expect(second.status).toBe(429);
-        expect(second.headers.get("retry-after")).toBe("600");
-    });
-
     it("fetches the pull request from GitHub and reviews each file with the chosen model when a key is set", async () => {
-        vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
-        const pull = {
-            title: demoFixture.pr.title,
-            body: "",
-            html_url: demoFixture.pr.url,
-            user: { login: "a" },
-            head: { sha: "s", ref: "h" },
-            base: { ref: "main" },
-        };
-        vi.stubGlobal(
-            "fetch",
-            vi.fn(async (_url: string, init?: RequestInit) =>
-                new Headers(init?.headers).get("accept") === "application/vnd.github.diff" ? new Response(demoFixture.diff) : Response.json(pull),
-            ),
-        );
-        stream.mockImplementation((params: { messages: { content: string }[] }) => ({
-            finalMessage: async () => {
-                const path = /<diff file="([^"]+)"/.exec(params.messages[0]?.content ?? "")?.[1];
-                const saved = demoFixture.chunks[`${path}#1`];
-                return {
-                    content: [{ type: "text", text: JSON.stringify(saved?.response ?? { findings: [] }) }],
-                    stop_reason: "end_turn",
-                    usage: { input_tokens: 1000, output_tokens: 100 },
-                };
-            },
-        }));
+        stubReviewWithKey();
 
         const events = await eventsOf(await post({ url: "https://github.com/sample/team-directory/pull/42", model: "claude-sonnet-5-5" }));
 
         expect(stream).toHaveBeenCalledTimes(3);
         expect(events.find((event) => event.type === "meta")).toMatchObject({ demo: false, model: "claude-sonnet-5-5" });
         expect(events.at(-1)).toEqual({ type: "done", findingCount: 9, usage: { inputTokens: 3000, outputTokens: 300 } });
+    });
+
+    it("counts a review against the rate limit only once the model has answered", async () => {
+        vi.stubEnv("RATE_LIMIT_REVIEWS", "1");
+        stubReviewWithKey();
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async () => new Response("", { status: 404 })),
+        );
+        const failed = await eventsOf(await post({ url: "o/r#1" }));
+        stubReviewWithKey();
+
+        const answered = await post({ url: "https://github.com/sample/team-directory/pull/42" });
+        await eventsOf(answered);
+        const limited = await post({ url: "o/r#1" });
+
+        expect(failed.at(-1)).toMatchObject({ type: "error" });
+        expect(answered.status).toBe(200);
+        expect(limited.status).toBe(429);
+        expect(limited.headers.get("retry-after")).toBe("600");
     });
 });

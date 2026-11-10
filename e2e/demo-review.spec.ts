@@ -12,7 +12,7 @@ test("reviews the sample pull request end to end in demo mode", async ({ page, c
     await page.getByRole("button", { name: "Start review" }).click();
 
     // Progress is announced while the saved review replays, then all findings are in.
-    await expect(page.getByRole("status").filter({ hasText: /Reviewing file \d of 3/ })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: /Reviewing 3 files|Reviewed \d of 3 files/ })).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: "Review complete: 9 findings" })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole("article")).toHaveCount(9);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Add search and pagination to the people table");
@@ -47,9 +47,22 @@ test("works at a 375px wide viewport in dark mode without horizontal scrolling",
     await page.setViewportSize({ width: 375, height: 800 });
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/");
-    await page.getByRole("button", { name: /fix: escape ids in resolve virtual modules/ }).click();
+    await page.getByRole("button", { name: /Add search and pagination to the people table/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "Review complete: 9 findings" })).toBeVisible({ timeout: 20_000 });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("reloading while a review runs shows the interrupted state, not a connection error", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("textbox", { name: "Pull request URL" }).fill("https://github.com/vitejs/vite/pull/24041");
+    await page.getByRole("button", { name: "Start review" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /Reviewing 3 files|Reviewed \d of 3 files/ })).toBeVisible();
+
+    await page.reload();
+
+    await expect(page.getByText("The page was reloaded while the review was running. Findings that arrived are kept.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Run the review again" })).toBeVisible();
+    await expect(page.getByText("Could not reach the server")).toHaveCount(0);
 });

@@ -7,6 +7,14 @@ import { useReviewStore } from "@/store/review-store";
 
 async function run(request: ReviewRequest, signal: AbortSignal): Promise<void> {
     const { applyEvent, fail } = useReviewStore.getState();
+    // Reloading or leaving the page cuts the stream with an AbortError or a "network error" TypeError, depending on
+    // where the read was. Either way our controller did not abort, so the page itself says when it is going away.
+    let leaving = false;
+    const markLeaving = () => {
+        leaving = true;
+    };
+    window.addEventListener("beforeunload", markLeaving);
+    window.addEventListener("pagehide", markLeaving);
     try {
         const finished = await streamReview(
             request,
@@ -15,9 +23,15 @@ async function run(request: ReviewRequest, signal: AbortSignal): Promise<void> {
             },
             signal,
         );
-        if (!finished && !signal.aborted) fail("upstream", "The connection closed before the review finished. Findings so far are kept.");
-    } catch {
-        if (!signal.aborted) fail("upstream", "Could not reach the server. Check your connection and try again.");
+        if (!finished && !signal.aborted && !leaving) fail("upstream", "The connection closed before the review finished. Findings so far are kept.");
+    } catch (error) {
+        if (signal.aborted) return;
+        // The persisted status is still "streaming", so the store restores it as "interrupted" on the next load.
+        if (leaving || (error instanceof DOMException && error.name === "AbortError")) return;
+        fail("upstream", "Could not reach the server. Check your connection and try again.");
+    } finally {
+        window.removeEventListener("beforeunload", markLeaving);
+        window.removeEventListener("pagehide", markLeaving);
     }
 }
 

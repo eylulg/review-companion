@@ -21,18 +21,18 @@ jobs:
       ANTHROPIC_API_KEY: ""
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
 
       # package.json depends on file:../ui, so the component library has to sit next to this checkout.
       # actions/checkout cannot write outside the workspace, so check it out here and move it up a level.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: eylulg/ui
           path: ui-src
@@ -43,10 +43,12 @@ jobs:
           npm --prefix ../ui ci
           npm --prefix ../ui run build
 
-      - run: npm ci
+      # install-links copies the library in, as the local relink does. A symlink would give TypeScript two
+      # copies of the React types. npm ci cannot be used: the lockfile records the library as a link.
+      - run: npm install --no-audit --no-fund --install-links
 
       - name: Secret scan
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -63,7 +65,7 @@ jobs:
       - name: End-to-end tests (demo mode)
         run: npm run test:e2e
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
@@ -80,14 +82,14 @@ jobs:
       ANTHROPIC_API_KEY: ""
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: eylulg/ui
           path: ui-src
@@ -98,7 +100,9 @@ jobs:
           npm --prefix ../ui ci
           npm --prefix ../ui run build
 
-      - run: npm ci
+      # install-links copies the library in, as the local relink does. A symlink would give TypeScript two
+      # copies of the React types. npm ci cannot be used: the lockfile records the library as a link.
+      - run: npm install --no-audit --no-fund --install-links
       - run: npm run build
       - name: Lighthouse budgets
         run: npx lhci autorun

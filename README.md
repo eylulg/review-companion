@@ -130,7 +130,7 @@ npm run test:e2e        # Playwright: production build in demo mode, axe in ligh
 
 The Anthropic SDK is replaced with a stub in every test, and GitHub is stubbed at `fetch`; no test calls a real API. The UI tests run the real pipeline over the demo fixture and stub only the network.
 
-CI (`.github/workflows/ci.yml`) checks out `eylulg/ui` next to the repository and builds it before `npm ci`, then runs a secret scan, commitlint on pull requests, then typecheck, lint, format check, knip, unit tests, build and the end-to-end test.
+CI (`.github/workflows/ci.yml`) checks out `eylulg/ui` next to the repository and builds it before `npm ci`, then runs a secret scan, then typecheck, lint, format check, knip, unit tests, build and the end-to-end test.
 
 ## Deploying to Vercel
 

@@ -18,8 +18,8 @@ jobs:
     timeout-minutes: 20
     env:
       # Tests and the end-to-end run never call the model; demo mode needs no key.
-      ANTHROPIC_API_KEY: ""
-      NEXT_TELEMETRY_DISABLED: "1"
+      ANTHROPIC_API_KEY: ''
+      NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v7
         with:
@@ -79,8 +79,8 @@ jobs:
     timeout-minutes: 15
     needs: ci
     env:
-      ANTHROPIC_API_KEY: ""
-      NEXT_TELEMETRY_DISABLED: "1"
+      ANTHROPIC_API_KEY: ''
+      NEXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v7
 

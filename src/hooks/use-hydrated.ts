@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from 'react';
 
 const subscribe = () => () => {};
 
 /** False during server rendering and hydration, true afterwards. */
 export function useHydrated(): boolean {
-    return useSyncExternalStore(
-        subscribe,
-        () => true,
-        () => false,
-    );
+  return useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 }

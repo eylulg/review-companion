@@ -1,4 +1,4 @@
-@import "tailwindcss";
-@import "@eylulg/ui/theme.css";
-@import "@eylulg/ui/themes/review.css";
-@source "../../node_modules/@eylulg/ui/dist";
+@import 'tailwindcss';
+@import '@eylulg/ui/theme.css';
+@import '@eylulg/ui/themes/review.css';
+@source '../../node_modules/@eylulg/ui/dist';

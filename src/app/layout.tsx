@@ -27,7 +27,11 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
-        <AppShell header={<Nav />} footer={<SiteFooter currentId='review-companion' />}>
+        <AppShell
+          maxWidth='6xl'
+          header={<Nav />}
+          footer={<SiteFooter currentId='review-companion' />}
+        >
           {children}
         </AppShell>
       </body>

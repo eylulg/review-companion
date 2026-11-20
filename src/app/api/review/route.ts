@@ -95,22 +95,25 @@ export async function POST(request: Request): Promise<Response> {
   const model = demo ? demoFixture.model : requested;
 
   let answered = false;
-  const reviewer = createClaudeReviewer(
-    new Anthropic({ apiKey: config.apiKey }),
-    config.effort,
-    config.maxOutputTokens,
-  );
-  const deps: ReviewDependencies = demo
-    ? createDemoDependencies()
-    : {
-        fetchPullRequest: (pullRef, signal) =>
-          fetchPullRequest(pullRef, { token: config.githubToken, signal }),
-        reviewChunk: async (input) => {
-          const output = await reviewer(input);
-          if (output.usage.inputTokens > 0) answered = true;
-          return output;
-        },
-      };
+  // Without a key the saved review replaces both GitHub and Claude, so no client is created at all.
+  function liveDependencies(): ReviewDependencies {
+    const reviewer = createClaudeReviewer(
+      new Anthropic({ apiKey: config.apiKey }),
+      config.effort,
+      config.maxOutputTokens,
+    );
+    return {
+      fetchPullRequest: (pullRef, signal) =>
+        fetchPullRequest(pullRef, { token: config.githubToken, signal }),
+      reviewChunk: async (input) => {
+        const output = await reviewer(input);
+        if (output.usage.inputTokens > 0) answered = true;
+        return output;
+      },
+    };
+  }
+
+  const deps: ReviewDependencies = demo ? createDemoDependencies() : liveDependencies();
 
   const events = runReview(
     {

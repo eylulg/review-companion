@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "rm -rf .ui && git clone --depth 1 https://github.com/eylulg/ui .ui && npm --prefix .ui ci && npm --prefix .ui run build && rm -rf .ui/node_modules && npm pkg set \"dependencies.@eylulg/ui=file:./.ui\" && npm install --no-audit --no-fund --install-links"
+}

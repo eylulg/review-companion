@@ -43,7 +43,7 @@ Parser, chunking, schema, export, the API route, the store and the UI flows are 
 
 ## Deploy
 
-Vercel, Next.js preset, repository root, Node 24. `vercel.json` clones and builds `eylulg/ui` during install because the library is not on npm yet.
+Vercel, Next.js preset, repository root, Node 24. `vercel.json` clones and builds `eylulg/ui` from its main branch during install, so the app uses the latest library code before it is released to npm.
 
 Leave `ANTHROPIC_API_KEY` unset for the free public demo. For live reviews, set the variables below and a spend limit on the key. The review route allows 300 seconds (`maxDuration`), which needs a Vercel plan that permits it.
 

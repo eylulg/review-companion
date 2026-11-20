@@ -132,15 +132,15 @@ The Anthropic SDK is replaced with a stub in every test, and GitHub is stubbed a
 
 CI (`.github/workflows/ci.yml`) checks out `eylulg/ui` next to the repository and builds it before `npm ci`, then runs a secret scan, then typecheck, lint, format check, knip, unit tests, build and the end-to-end test.
 
-## Deploying to Vercel
+## Deploy
 
-Vercel cannot resolve `file:../ui`, because the sibling checkout does not exist there. Deploys need the component library on npm: once `@eylulg/ui` is published, replace the `file:../ui` range in `package.json` with `^1.0.0` (and remove the `turbopack.root` setting in `next.config.ts` and the library checkout step in CI). Until then the app runs locally and in CI only.
+The app goes to Vercel (Next.js preset, repository root). `@eylulg/ui` is not on npm, so `vercel.json` sets an install command that clones the library into `.ui`, builds it and installs the app against that copy for that build only. `package.json` and local development keep `file:../ui`.
 
-1. Import the repository in Vercel. The framework preset is Next.js; no build settings are needed.
-2. Set environment variables for Production (and Preview if you want live reviews there): `ANTHROPIC_API_KEY`, optionally `GITHUB_TOKEN`, `REVIEW_MODEL` and the limits. Leave `ANTHROPIC_API_KEY` unset for a free demo deployment.
-3. The review route allows up to 300 seconds (`maxDuration`), which needs a plan that permits it. Large pull requests take a few minutes.
+1. Import the repository in Vercel, or run `vercel deploy --prod` from the root. No build settings are needed; `vercel.json` has the install command and the Next.js preset does the rest. Node 24 comes from `engines`.
+2. Leave `ANTHROPIC_API_KEY` unset for the free public demo. Every review then replays the saved sample and never calls GitHub or Claude, so GitHub rate limits and token spend do not apply.
+3. For live reviews, set `ANTHROPIC_API_KEY` (secret), optionally `GITHUB_TOKEN` (secret), `REVIEW_MODEL` and the limits, and put a spend limit on the Anthropic key. The review route allows up to 300 seconds (`maxDuration`), which needs a plan that permits it.
 
-The rate limit lives in memory, so each serverless instance counts separately. For a public deployment with a real key, also set a spend limit on the Anthropic key.
+The rate limit lives in memory, so each serverless instance counts separately.
 
 ### Public demo defaults
 
